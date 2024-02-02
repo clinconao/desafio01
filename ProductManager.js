@@ -1,60 +1,81 @@
-class ProductManager {
-    constructor() {
-        this.products = [];
+import { promises as fs } from 'fs'
+
+export class ProductManager {
+    constructor(path) {
+        this.path = path 
     }
 
-    addProduct(product) {
-        // Validar que no se repita el campo "code"
-        if (this.products.find(p => p.code === product.code)) {
-            throw new Error("El código del producto ya existe");
-        }
+    async getProducts() {
+        const prods = JSON.parse(await fs.readFile(this.path, 'utf-8'))
+        console.log(prods)
+    }
 
-        // Validar que todos los campos sean obligatorios
-        for (const key in product) {
-            if (product[key] === undefined || product[key] === "") {
-                throw new Error(`El campo "${key}" es obligatorio`);
+    async getProductById(id) {
+        const prods = JSON.parse(await fs.readFile(this.path, 'utf-8'))
+        const prod = prods.find(producto => producto.id === id)
+        if (prod)
+            console.log(prod)
+        else
+            console.log('Producto no existe')
+    }
+
+    async addProduct(newProduct) {
+        const prods = JSON.parse(await fs.readFile(this.path, 'utf-8'))
+        if (
+            newProduct.code &&
+            newProduct.id &&
+            newProduct.title &&
+            newProduct.description &&
+            newProduct.price &&
+            newProduct.thumbnail &&
+            newProduct.code &&
+            newProduct.stock
+            ) {
+            const indice = prods.findIndex(prod => prod.code === newProduct.code)
+            console.log(indice)
+            if (indice === -1) {
+                prods.push(newProduct)
+                console.log(prods)
+                await fs.writeFile(this.path, JSON.stringify(prods))
+                console.log('Producto creado correctamente')
+            } else {
+                console.log('Producto ya existe en este array')
             }
+        } else {
+            console.log('Debe ingresar un producto con todas las propiedades')
+        }
+    }
+
+    async updateProduct(id, nuevoProducto) {
+        const prods = JSON.parse(await fs.readFile(this.path, 'utf-8'))
+        const indice = prods.findIndex(producto => producto.id === id)
+        if (indice != -1) {
+            prods[indice].stock = nuevoProducto.stock
+            prods[indice].price = nuevoProducto.price
+            prods[indice].title = nuevoProducto.title
+            prods[indice].thumbnail = nuevoProducto.thumbnail
+            prods[indice].description = nuevoProducto.description
+            prods[indice].code = nuevoProducto.code
+            await fs.writeFile(this.path, JSON.stringify(prods))
+            console.log('Producto actualizado correctamente')
+        } else {
+            console.log('Producto no existe')
         }
 
-        // Generar un code tipo id único
-        product.code = Math.random().toString(36).substr(2, 18);
-
-        // Crear un id autoincrementable
-        product.id = this.products.length + 1;
-
-        // Agregar el producto al arreglo
-        this.products.push(product);
     }
 
-    getProducts() {
-        return this.products;
-    }
-
-    getProductById(id) {
-        const product = this.products.find(p => p.id === id);
-        if (!product) {
-            console.error("No se encontró el producto");
+    async deleteProduct(id) {
+        const prods = JSON.parse(await fs.readFile(this.path, 'utf-8'))
+        const indice = prods.findIndex(producto => producto.id === id)
+        if (indice != -1) {
+            const prodsFiltrados = prods.filter(prod => prod.id != id)
+            await fs.writeFile(this.path, JSON.stringify(prodsFiltrados))
+            console.log('Producto eliminado correctamente')
+        } else {
+            console.log('Producto no existe')
         }
-        return product;
+
     }
+
+
 }
-
-const productManager = new ProductManager();
-
-// Agregar un producto
-productManager.addProduct({
-    tittle: 'Album',
-    product: 'Producto 1',
-    description: 'Es un libro de albunes',
-    price: 100,
-    thumbnail : 'null',
-    stock: 30
-});
-
-// Obtener todos los productos
-const products = productManager.getProducts();
-console.log(products);
-
-const product = productManager.getProductById();
-console.log(product);
-
